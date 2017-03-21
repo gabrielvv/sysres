@@ -17,7 +17,9 @@ int main(int argc, char* argv){
 	bzero( &servaddr, sizeof(servaddr) );
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = 12345;
-	servaddr.sin_addr.s_addr = htons(INADDR_ANY);
+	servaddr.sin_addr.s_addr = htons(INADDR_ANY); // ne pas utiliser Wildcard INADDR_ANY avec le client
+
+	// le kernel gère l'attribution des ports
 
 	int c_s = connect(sfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 	if(c_s < 0){
@@ -27,9 +29,14 @@ int main(int argc, char* argv){
 	}
 	printf("successful connection\n");
 	
-	char* message = "lol";
-	write(sfd, message, sizeof(message));
+	char* msg = "Hello";
+	write(sfd, msg, sizeof(msg));
 
+	char buff[40];
+	read(sfd, buff, sizeof(buff));
+	printf("client: message received!: %s\n", buff);
+
+	// envoie un paquet de fin de connection
 	close(sfd);
 	return 0;
 }

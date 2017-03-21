@@ -62,15 +62,49 @@ int main(int argc, char* argv){
 	printf("listening with return value %d\n", l_s);	
 
 	/******************** ACCEPT *****************************/
-	int cfd = accept(sfd, (struct sockaddr *)NULL, NULL);  
-	printf("connection acceptée avec socket %d\n", cfd);
-	//fflush(stdout);
 
-	char buff[40];
-	read(cfd, buff, sizeof(buff));
-	
-	printf("message received: %s\n", buff);
+	while(1){
 
+		int cfd = accept(sfd, (struct sockaddr *)NULL, NULL);
 
+		/******************* FORK *******************/
+
+		int cpid = fork(); //return 0 in the son process
+		if (cpid == -1) {
+		   perror("fork");
+		   exit(EXIT_FAILURE);
+		}
+		printf("connection acceptée avec socket %d\n", cfd);
+		//fflush(stdout);
+
+		/* Le fils ferme sfd qu'il n'utilisera plus */
+		if(cpid == 0){
+			close(sfd);
+
+			char buff[40];
+			read(cfd, buff, sizeof(buff));
+			printf("server: message received: %s\n", buff);
+
+			char* msg = "World";
+			write(cfd, msg, sizeof(msg));
+
+			// ATTENTION INDISPENSABLE !!
+			break;
+
+		/* Le père ferme cfd qu'il n'utilisera plus */
+		}else{
+			close(cfd);
+		}
+
+	}
+
+   /** 
+	* http://www.microhowto.info/howto/reap_zombie_processes_using_a_sigchld_handler.html
+	*
+	*/
+
+	close(cfd);
+	//close(sfd);
+	exit(0);
 	return 0;
 }
