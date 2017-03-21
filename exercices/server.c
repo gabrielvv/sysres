@@ -7,14 +7,99 @@
 #include <strings.h> //bzero
 #include <unistd.h> // write - read
 
-// SEE man 3 getaddrinfo client-server program example
+#include <signal.h>
+#include <sys/wait.h>
+#include <errno.h>
+
+/** 
+* http://www.microhowto.info/howto/reap_zombie_processes_using_a_sigchld_handler.html
+*
+*/
+void handle_sigchld(int sig) {
+  int saved_errno = errno;
+
+  // -1 => wait for any child process
+  while (waitpid((pid_t)(-1), 0, WNOHANG/* prevents handler from blocking */) > 0) {}
+  /*
+	man waitpid:
+	"In the case of a terminated child, performing a wait  allows
+	the  system  to  release  the resources associated with the child"
+  */
+  errno = saved_errno;
+}
+
+/**
+*
+* Ctrl+C
+*
+*/
+void handle_sigint(int sig){
+	//close sockets
+}
+
+/*
+*
+* @todo 
+*
+* @see man 3 getaddrinfo client-server program example
+*
+*
+*
+*/
 int main(int argc, char* argv){
+
+	/********************************************************************/
+
+   /** 
+	* http://www.microhowto.info/howto/reap_zombie_processes_using_a_sigchld_handler.html
+	* http://www-igm.univ-mlv.fr/~dr/CS/node178.html
+	*/
+	struct sigaction sa;
+	sa.sa_handler = &handle_sigchld;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+	if (sigaction(SIGCHLD, &sa, 0) == -1) {
+		// echec de sigaction
+		perror(0);
+		exit(1);
+	}
+
+	/********************************************************************/
 
 	setbuf(stdout, NULL);//pas besoin de fflush après printf
 
+	int cfd;
 	int sfd = socket(AF_INET, SOCK_STREAM, 0);
 	printf("socket created\n");
 	//fflush(stdout);	
+
+	/********************************************************************/
+
+	/**
+	* Fermer socket avant de quitter
+	* via 'kill <pid>' par exemple
+	*
+	*/
+	void handle_sigint_sigterm(int signo){
+		if(signo == SIGINT){
+			printf("SIGINT\n"); // CTRL+C
+		}
+		if(signo == SIGTERM){
+			printf("SIGTERM\n");
+		}
+		close(sfd);
+		exit(0);
+	}
+
+	struct sigaction act = {handle_sigint_sigterm};
+	if (sigaction(SIGINT, &act, 0) == -1 || sigaction(SIGTERM, &act, 0) == -1) {
+		// echec de sigaction
+		perror(0);
+		exit(1);
+	}
+
+	/********************************************************************/							
+
 	
 	unsigned char buf[sizeof(struct in_addr)];
 	int s = inet_pton(AF_INET, "127.0.0.1",buf);
@@ -65,7 +150,7 @@ int main(int argc, char* argv){
 
 	while(1){
 
-		int cfd = accept(sfd, (struct sockaddr *)NULL, NULL);
+		cfd = accept(sfd, (struct sockaddr *)NULL, NULL);
 
 		/******************* FORK *******************/
 
@@ -82,7 +167,7 @@ int main(int argc, char* argv){
 			close(sfd);
 
 			char buff[40];
-			read(cfd, buff, sizeof(buff));
+			read(cfd, buff, sizeof(buff)); // bloquant
 			printf("server: message received: %s\n", buff);
 
 			char* msg = "World";
@@ -98,13 +183,8 @@ int main(int argc, char* argv){
 
 	}
 
-   /** 
-	* http://www.microhowto.info/howto/reap_zombie_processes_using_a_sigchld_handler.html
-	*
-	*/
-
 	close(cfd);
-	//close(sfd);
+	close(sfd);
 	exit(0);
 	return 0;
 }

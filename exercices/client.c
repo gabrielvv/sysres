@@ -17,7 +17,7 @@ int main(int argc, char* argv){
 	bzero( &servaddr, sizeof(servaddr) );
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = 12345;
-	servaddr.sin_addr.s_addr = htons(INADDR_ANY); // ne pas utiliser Wildcard INADDR_ANY avec le client
+	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); // ne pas utiliser Wildcard INADDR_ANY avec le client
 
 	// le kernel gère l'attribution des ports
 
@@ -33,7 +33,7 @@ int main(int argc, char* argv){
 	write(sfd, msg, sizeof(msg));
 
 	char buff[40];
-	read(sfd, buff, sizeof(buff));
+	read(sfd, buff, sizeof(buff)); // bloquant
 	printf("client: message received!: %s\n", buff);
 
 	// envoie un paquet de fin de connection
