@@ -1,0 +1,18 @@
+#!/bin/bash
+
+mv facto_server.c temp1
+mv facto_client.c temp2
+
+rpcgen -a facto.x
+gcc -c facto_xdr.c
+gcc -c facto_clnt.c
+gcc -c facto_svc.c
+
+rm facto_server.c
+rm facto_client.c
+mv temp1 facto_server.c
+mv temp2 facto_client.c
+
+make -f Makefile.facto
+
+echo vous pouvez maintenant lancer les programmes facto_server et facto_client
