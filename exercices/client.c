@@ -17,7 +17,9 @@ int main(int argc, char* argv){
 	bzero( &servaddr, sizeof(servaddr) );
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = 12345;
-	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); // ne pas utiliser Wildcard INADDR_ANY avec le client
+	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+	// ne pas utiliser Wildcard INADDR_ANY avec le client
+	// utiliser plutôt inet_aton
 
 	// le kernel gère l'attribution des ports
 
